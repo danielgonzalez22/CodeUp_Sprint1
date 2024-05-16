@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     age: { type: Number, required: true },
     genre: { type: String, default: '' },
     events: [{
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'event'
     }],
     role: {
