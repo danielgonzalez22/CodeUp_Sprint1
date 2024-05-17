@@ -4,7 +4,7 @@ const placeSchema = new mongoose.Schema({
     address: { type: String, required: true },
     photo: { type: String, default: '' },
     date: [{
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'event'
     }],
     occupancy: { type: Number, required: true },
