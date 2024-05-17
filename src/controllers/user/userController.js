@@ -14,9 +14,13 @@ const userController = {
             events,
             role
         } = req.body
-      
+
         try {
             const result = await validator.validateAsync(req.body)
+            if (result) {
+                let user = await new User(req.body).save()
+                res.send(user)
+            }
             // let user = await User.findOne({ email })
             // if (!user) {
             //     user = await new User({ name, lastName, photo, email, password, age, genre, events, role }).save()
