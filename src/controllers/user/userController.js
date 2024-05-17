@@ -17,28 +17,43 @@ const userController = {
 
         try {
             const result = await validator.validateAsync(req.body)
-            if (result) {
-                let user = await new User(req.body).save()
-                res.send(user)
+            let user = await User.findOne({ email })
+            if (!user) {
+                user = await new User({ name, lastName, photo, email, password, age, genre, events, role }).save()
+                res.status(201).json({
+                    message: "Signup successful! Please login.",
+                    success: true
+                })
+            } else {
+                res.status(409).json({
+                    message: "Email address already in use.",
+                    success: false
+                })
             }
-            // let user = await User.findOne({ email })
-            // if (!user) {
-            //     user = await new User({ name, lastName, photo, email, password, age, genre, events, role }).save()
-            //     res.status(201).json({
-            //         message: "User signed up succesfully, please log in.",
-            //         success: true
-            //     })
-            // } else {
-            //     res.status(409).json({
-            //         message: "The provided email already exists",
-            //         success: false
-            //     })
-            // }
         }
         catch (error) {
             res.status(400).json({
                 message: error.message,
                 success: false
+            })
+        }
+    },
+
+    LogIn: async (req, res) => {
+        const { email, password } = req.body
+        try {
+            const user = await User.findOne({ email })
+            if (!user) {
+                res.status(404).json({
+                    success: false,
+                    message: "Email address not found. Please check and try again."
+                })
+            }
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({
+                success: false,
+                message: "An error occurred during the login process."
             })
         }
     }
