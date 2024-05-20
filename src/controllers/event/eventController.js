@@ -6,7 +6,7 @@ const validator = require('./eventValidator')
 const eventController = {
   createEvent: async (req, res) => {
 
-    //desctructuring the body of the request for handling properties separately
+    //destructuring the body of the request for handling properties separately
     let {
       place,
       date,
@@ -76,6 +76,7 @@ const eventController = {
       res.status(200).json({
         success: true,
         message: 'New event added to the database!',
+        event: newEvent
       })
     } catch (error) {
       res.status(400).json({
