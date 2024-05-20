@@ -36,7 +36,7 @@ const eventController = {
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: "No user with the provided id was found."
+          message: "No user with the provided ID was found."
         })
       }
 
@@ -88,7 +88,7 @@ const eventController = {
     try {
       const events = await Event.find()
         //replacing certain Event fields with specified properties of the referenced object of each referenced collection
-        .populate('place', 'name')
+        .populate('place', 'name occupancy')
         .populate('organizer', 'name email')
         .populate('attendees', 'name')
       res.status(200).json({
@@ -103,6 +103,92 @@ const eventController = {
       })
     }
 
+  },
+  enrollEvent: async (req, res) => {
+    const userId = req.user && req.user.id
+    const { eventId } = req.body // Assuming the event ID and place occupancy is sent in the request body
+
+    try {
+      if (!eventId) {
+        return res.status(400).json({
+          success: false,
+          message: "Event ID is not provided."
+        })
+      }
+
+      const event = await Event.findById(eventId).populate('place', 'occupancy')
+      if (!event) {
+        return res.status(404).json({
+          success: false,
+          message: "Event not found."
+        })
+      }
+
+      const place = event.place
+      if (!place) {
+        return res.status(404).json({
+          success: false,
+          message: "No place found for that event."
+        })
+      }
+
+      const placeOccupancy = place.occupancy
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No user with the provided ID was found."
+        })
+      }
+
+      if (user.age < event.minimumAge) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not meet the minimum age requirement for this event."
+        })
+      }
+
+      // Check if the user is already enrolled in the event
+      if (event.attendees.includes(userId)) {
+        return res.status(400).json({
+          success: false,
+          message: "You are already enrolled in this event."
+        })
+      }
+
+      // Checking the available occupancy for the event
+      const availableOccupancy = placeOccupancy - event.attendees.length
+      if (availableOccupancy < 1) {
+        return res.status(403).json({
+          success: false,
+          message: "This event is fully booked."
+        })
+      }
+
+      // Enroll the user
+      event.attendees.push(userId)
+      await event.save()
+
+      res.status(200).json({
+        success: true,
+        message: "Successfully enrolled in the event.",
+        event
+      })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({
+        success: false,
+        message: "An error occurred during the enrollment process."
+      })
+    }
   }
 }
 
