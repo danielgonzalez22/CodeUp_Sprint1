@@ -11,7 +11,7 @@ const authMiddleware = (req, res, next) => {
         next()
     } catch (error) {
         res.status(401).json({ success: false, message: 'Token is not valid.' })
-    }
+    }  
 }
 
 module.exports = authMiddleware
