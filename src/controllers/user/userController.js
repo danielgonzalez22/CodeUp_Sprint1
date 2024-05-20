@@ -21,7 +21,7 @@ const userController = {
       const result = await validator.validateAsync(req.body)
       let user = await User.findOne({ email })
       if (!user) {
-        user = await new User({ name, lastName, photo, email, password, age, genre, events, role }).save()
+        user = await new User(result).save()
         res.status(201).json({
           message: "Signup successful! Please login.",
           success: true
