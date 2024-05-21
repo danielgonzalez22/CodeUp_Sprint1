@@ -14,17 +14,16 @@ const placeController = {
     } = req.body
 
     try {
-      // const userId = req.user && req.user.id // Assuming req.user is populated by verifyToken middleware
+      const userId = req.user && req.user.id // Assuming req.user is populated by verifyToken middleware
 
-      // //checking if user id is provided:
-      // if (!userId) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: "User ID is not provided."
-      //   })
-      // }
+      //checking if user id is provided:
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
 
-      const userId = "6646cb87c4c457756845cdf6"
       //searching a user with the provided id
       const user = await User.findById(userId)
 
@@ -54,7 +53,6 @@ const placeController = {
           message: 'Specified place name already exists.',
         })
       }
-
 
       //finally, creating a new place
       const newPlace = await new Place(result).save()
