@@ -5,17 +5,7 @@ const validator = require('./userValidator')
 
 const userController = {
   signUp: async (req, res) => {
-    let {
-      name,
-      lastName,
-      photo,
-      email,
-      password,
-      age,
-      genre,
-      events,
-      role
-    } = req.body
+    let { email } = req.body
 
     try {
       const result = await validator.validateAsync(req.body)
