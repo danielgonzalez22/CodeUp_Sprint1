@@ -5,7 +5,6 @@ const validator = require('./eventValidator')
 
 const eventController = {
   createEvent: async (req, res) => {
-
     //destructuring the body of the request for handling properties separately
     let {
       place,
@@ -85,6 +84,7 @@ const eventController = {
       })
     }
   },
+
   getAllEvents: async (req, res) => {
     try {
       const events = await Event.find()
@@ -105,6 +105,41 @@ const eventController = {
     }
 
   },
+
+  getEventById: async (req, res) => {
+    const { id } = req.params
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Event ID is not provided."
+      })
+    }
+
+    try {
+      const event = await Event.findById(id)
+        .populate('place', 'name occupancy')
+        .populate('organizer', 'name email')
+        .populate('attendees', 'name')
+      if (!event) {
+        return res.status(404).json({
+          success: false,
+          message: "No event with the provided ID was found."
+        })
+      }
+      res.status(200).json({
+        success: true,
+        data: event
+      })
+
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching the event by ID.",
+      })
+    }
+  },
+
   enrollEvent: async (req, res) => {
     const userId = req.user && req.user.id
     const { eventId } = req.body // Assuming the event ID and place occupancy is sent in the request body
