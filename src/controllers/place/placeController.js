@@ -85,6 +85,37 @@ const placeController = {
       })
     }
   },
+  getPlaceById: async (req, res) => {
+    const { id } = req.params
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Place ID is not provided."
+      })
+    }
+
+    try {
+      const place = await Place.findById(id).populate('date', 'name date attendees')
+
+      if (!place) {
+        return res.status(404).json({
+          success: false,
+          message: "No place with the provided ID was found."
+        })
+      }
+      res.status(200).json({
+        success: true,
+        data: place
+      })
+
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({
+        success: false,
+        message: "An error occurred while fetching the place by ID.",
+      })
+    }
+  }
 }
 
 module.exports = placeController
