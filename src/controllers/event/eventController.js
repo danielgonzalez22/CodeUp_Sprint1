@@ -1,7 +1,8 @@
 const Event = require('../../models/eventModel')
 const User = require('../../models/userModel')
 const Place = require('../../models/placeModel')
-const validator = require('./eventValidator')
+const eventValidator = require('./eventValidator')
+const commentValidator = require('./commentValidator')
 
 const eventController = {
   createEvent: async (req, res) => {
@@ -47,7 +48,7 @@ const eventController = {
         })
       }
 
-      const result = await validator.validateAsync(req.body)
+      const result = await eventValidator.validateAsync(req.body)
 
       //check if the place exists
       const place = await Place.findById(result.place)
@@ -223,6 +224,69 @@ const eventController = {
       res.status(500).json({
         success: false,
         message: "An error occurred during the enrollment process."
+      })
+    }
+  },
+
+  addComment: async (req, res) => {
+    const userId = req.user && req.user.id
+    const { eventId, comment } = req.body
+    try {
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No user with the provided ID was found."
+        })
+      }
+
+      const event = await Event.findById(eventId).populate('attendees')
+      if (!event) {
+        return res.status(404).json({
+          success: false,
+          message: "No event with the provided ID was found."
+        })
+      }
+
+      if (event.date > new Date()) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only comment on events that have already happened."
+        })
+      }
+
+      if (!event.attendees.some(att => att._id.toString() === userId.toString())) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only comment on events you attended."
+        })
+      }
+
+      const newComment = await commentValidator.validateAsync(comment)
+      event.comments.push({
+        user: userId,
+        newComment,
+      })
+
+      await event.save()
+
+      res.status(200).json({
+        success: true,
+        message: "Comment added successfully.",
+        event
+      })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({
+        success: false,
+        message: error.message
       })
     }
   }
