@@ -36,7 +36,10 @@ const eventSchema = new mongoose.Schema({
         ref: 'user',
         required: true
     },
-    comments: [commentSchema]
+    comments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'comment'
+    }]
 })
 
 module.exports = mongoose.model(
