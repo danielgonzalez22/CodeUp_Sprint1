@@ -136,6 +136,51 @@ const userController = {
         success: false
       })
     }
+  },
+
+  changePassword: async (req, res) => {
+    const userId = req.user && req.user.id
+    const { oldPassword, newPassword } = req.body
+
+    try {
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No user with the provided ID was found."
+        })
+      }
+
+      // Check if old password is correct
+      const isMatch = await bcrypt.compare(oldPassword, user.password)
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: "Old password is incorrect."
+        })
+      }
+
+      // Update the password
+      user.password = newPassword
+      await user.save()
+
+      res.status(200).json({
+        success: true,
+        message: "Password updated successfully."
+      })
+    } catch (error) {
+      res.status(500).json({
+        message: error.message,
+        success: false
+      })
+    }
   }
 }
 module.exports = userController
