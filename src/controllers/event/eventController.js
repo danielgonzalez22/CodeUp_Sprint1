@@ -272,7 +272,7 @@ const eventController = {
       const newComment = await commentValidator.validateAsync(comment)
       event.comments.push({
         user: userId,
-        newComment,
+        newComment
       })
 
       await event.save()
