@@ -68,8 +68,12 @@ const userController = {
         user: {
           id: user._id,
           name: user.name,
+          lastName: user.lastName,
+          photo: user.photo,
           email: user.email,
-          role: user.role
+          age: user.age,
+          genre: user.genre,
+          role: user.role,
         }
       })
     } catch (error) {
@@ -80,16 +84,16 @@ const userController = {
     }
   },
 
-  getUserById: async (req, res) => {
-    userId = req.user._id
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID is not provided."
-      })
-    }
-    const user = await User.findById(userId)
-  },
+  // getUserById: async (req, res) => {
+  //   userId = req.user.id
+  //   if (!userId) {
+  //     return res.status(400).json({
+  //       success: false,
+  //       message: "User ID is not provided."
+  //     })
+  //   }
+  //   const user = await User.findById(userId)
+  // },
 
   updateProfile: async (req, res) => {
     const userId = req.user && req.user.id
@@ -114,7 +118,7 @@ const userController = {
       user.name = result.name
       user.lastName = result.lastName
       user.photo = result.photo
-      user.email = result.email
+      //user.email = result.email
       user.age = result.age
       user.genre = result.genre
       user.age = result.age
