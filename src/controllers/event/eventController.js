@@ -143,7 +143,7 @@ const eventController = {
 
   enrollEvent: async (req, res) => {
     const userId = req.user && req.user.id
-    const { eventId } = req.body // Assuming the event ID and place occupancy is sent in the request body
+    const { eventId } = req.body
 
     try {
       if (!eventId) {
@@ -186,6 +186,14 @@ const eventController = {
         })
       }
 
+      //check if the event has already happened
+      if (event.date < Date.now()) {
+        return res.status(403).json({
+          success: false,
+          message: "This event has already happened."
+        })
+      }
+
       if (user.age < event.minimumAge) {
         return res.status(403).json({
           success: false,
@@ -224,6 +232,109 @@ const eventController = {
       res.status(500).json({
         success: false,
         message: "An error occurred during the enrollment process."
+      })
+    }
+  },
+
+  updateEvent: async (req, res) => {
+    const userId = req.user && req.user.id
+    const { eventId } = req.body
+
+    try {
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No user with the provided ID was found."
+        })
+      }
+      if (!eventId) {
+        return res.status(400).json({
+          success: false,
+          message: "Event ID is not provided."
+        })
+      }
+      const event = await Event.findById(eventId)
+      if (!event) {
+        return res.status(404).json({
+          success: false,
+          message: "No event with the provided ID was found."
+        })
+      }
+
+      const result = await eventValidator.validateAsync(req.body)
+
+      //check user role for modifying the event
+      if (event.organizer.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Only the organizer of the event can modify it."
+        })
+      }
+
+      //check if the attendees exist in the database
+      const checkAttendees = await Promise.all(result.attendees.map(async attendeeId => {
+        const attendee = await User.findById(attendeeId)
+        if (attendee.role !== 'user') {
+          return res.status(404).json({
+            success: false,
+            message: "At least one of the provided attendees doesn't have 'user' role."
+          })
+        }
+        if (!attendee) {
+          return res.status(404).json({
+            success: false,
+            message: "At least one of the provided attendees does not exist."
+          })
+        }
+      }))
+
+      //check if the place of the event of the request exists in the database
+      const place = await Place.findById(result.place)
+      if (!place) {
+        return res.status(404).json({
+          success: false,
+          message: "Specified place does not exist."
+        })
+      }
+
+      event.place = result.place
+      event.date = result.date
+      event.name = result.name
+      event.description = result.description
+      event.minimumAge = result.minimumAge
+
+      if (checkAttendees(result.attendees)) {
+        event.attendees = result.attendees
+      }
+
+      if (event.date > Date.now()) {
+        event.attendees = result.attendees
+      } else if (event.attendees.toString() !== result.attendees.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: "Can't modify the attendees of an event that has already happened."
+        })
+      }
+
+      await event.save()
+      res.status(200).json({
+        success: true,
+        message: "Event data updated successfully.",
+        event
+      })
+    }
+    catch (error) {
+      res.status(500).json({
+        message: error.message,
+        success: false
       })
     }
   },
