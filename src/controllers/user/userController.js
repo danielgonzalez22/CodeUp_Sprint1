@@ -34,7 +34,7 @@ const userController = {
   logIn: async (req, res) => {
     const { email, password } = req.body
 
-    if (email && password) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
         message: "User email and/or password not provided"
@@ -107,7 +107,6 @@ const userController = {
       user.name = result.name
       user.lastName = result.lastName
       user.photo = result.photo
-      //user.email = result.email
       user.age = result.age
       user.genre = result.genre
 

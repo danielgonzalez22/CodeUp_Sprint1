@@ -142,7 +142,7 @@ const eventController = {
         })
       }
 
-      const event = await Event.findById(eventId).populate('place')
+      const event = await Event.findById(eventId).populate('place', 'occupancy')
       if (!event) {
         return res.status(404).json({
           success: false,
