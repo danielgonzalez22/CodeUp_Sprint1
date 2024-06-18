@@ -6,24 +6,13 @@ const commentValidator = require('./commentValidator')
 
 const eventController = {
   createEvent: async (req, res) => {
-    //destructuring the body of the request for handling properties separately
-    let {
-      place,
-      date,
-      name,
-      photo,
-      description,
-      attendees,
-      minimumAge,
-      organizer
-    } = req.body
+    const userId = req.user && req.user.id // Assuming req.user is populated by verifyToken middleware
 
     try {
-      const userId = req.user && req.user.id // Assuming req.user is populated by verifyToken middleware
 
       //checking if user id is provided:
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
           message: "User ID is not provided."
         })
@@ -153,7 +142,7 @@ const eventController = {
         })
       }
 
-      const event = await Event.findById(eventId).populate('place', 'occupancy')
+      const event = await Event.findById(eventId).populate('place')
       if (!event) {
         return res.status(404).json({
           success: false,
@@ -165,14 +154,14 @@ const eventController = {
       if (!place) {
         return res.status(404).json({
           success: false,
-          message: "No place found for that event."
+          message: "No place found for that event, please contact the organizer."
         })
       }
 
       const placeOccupancy = place.occupancy
 
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
           message: "User ID is not provided."
         })
@@ -238,11 +227,11 @@ const eventController = {
 
   updateEvent: async (req, res) => {
     const userId = req.user && req.user.id
-    const { eventId } = req.body
+    const { eventId, ...updatedData } = req.body
 
     try {
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
           message: "User ID is not provided."
         })
@@ -269,7 +258,7 @@ const eventController = {
         })
       }
 
-      const result = await eventValidator.validateAsync(req.body)
+      const validatedData = await eventValidator.validateAsync(updatedData)
 
       //check user role for modifying the event
       if (event.organizer.toString() !== userId) {
@@ -280,24 +269,25 @@ const eventController = {
       }
 
       //check if the attendees exist in the database
-      const checkAttendees = await Promise.all(result.attendees.map(async attendeeId => {
-        const attendee = await User.findById(attendeeId)
-        if (attendee.role !== 'user') {
-          return res.status(404).json({
-            success: false,
-            message: "At least one of the provided attendees doesn't have 'user' role."
-          })
-        }
-        if (!attendee) {
-          return res.status(404).json({
-            success: false,
-            message: "At least one of the provided attendees does not exist."
-          })
-        }
-      }))
+      const checkAttendees = await Promise.all(
+        validatedData.attendees.map(async attendeeId => {
+          const attendee = await User.findById(attendeeId)
+          if (!attendee) {
+            return res.status(404).json({
+              success: false,
+              message: "At least one of the provided attendees does not exist."
+            })
+          }
+          if (attendee.role !== 'user') {
+            return res.status(404).json({
+              success: false,
+              message: "At least one of the provided attendees doesn't have 'user' role."
+            })
+          }
+        }))
 
       //check if the place of the event of the request exists in the database
-      const place = await Place.findById(result.place)
+      const place = await Place.findById(validatedData.place)
       if (!place) {
         return res.status(404).json({
           success: false,
@@ -305,19 +295,15 @@ const eventController = {
         })
       }
 
-      event.place = result.place
-      event.date = result.date
-      event.name = result.name
-      event.description = result.description
-      event.minimumAge = result.minimumAge
-
-      if (checkAttendees(result.attendees)) {
-        event.attendees = result.attendees
-      }
+      event.place = validatedData.place
+      event.date = validatedData.date
+      event.name = validatedData.name
+      event.description = validatedData.description
+      event.minimumAge = validatedData.minimumAge
 
       if (event.date > Date.now()) {
-        event.attendees = result.attendees
-      } else if (event.attendees.toString() !== result.attendees.toString()) {
+        event.attendees = validatedData.attendees
+      } else if (event.attendees.toString() !== validatedData.attendees.toString()) {
         return res.status(403).json({
           success: false,
           message: "Can't modify the attendees of an event that has already happened."
@@ -344,7 +330,7 @@ const eventController = {
     const { eventId, comment } = req.body
     try {
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
           message: "User ID is not provided."
         })
@@ -358,7 +344,7 @@ const eventController = {
         })
       }
 
-      const event = await Event.findById(eventId).populate('attendees')
+      const event = await Event.findById(eventId)
       if (!event) {
         return res.status(404).json({
           success: false,
@@ -390,7 +376,7 @@ const eventController = {
 
       res.status(200).json({
         success: true,
-        message: "Comment added successfully.",
+        message: "Comment added to an event successfully.",
         event
       })
     } catch (error) {
