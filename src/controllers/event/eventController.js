@@ -325,6 +325,70 @@ const eventController = {
     }
   },
 
+  deleteEvent: async (req, res) => {
+    const userId = req.user && req.user.id
+    const { eventId } = req.body
+    try {
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No user with the provided ID was found."
+        })
+      }
+
+      //checking if the user has the necessary role for creating events
+      if (user.role !== 'organizer') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only users with organizer role can delete events.',
+        })
+      }
+
+      if (!eventId) {
+        return res.status(400).json({
+          success: false,
+          message: "Event ID is not provided."
+        })
+      }
+
+      const event = await Event.findById(eventId)
+      if (!event) {
+        return res.status(404).json({
+          success: false,
+          message: "No event with the provided ID was found."
+        })
+      }
+
+      if (event.organizer.toString() !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Only the organizer of the event can delete it."
+        })
+      }
+      
+      const deletedEvent = await Event.deleteOne()
+      res.status(200).json({
+        success: true,
+        message: 'Event deleted successfully.',
+        deletedEvent
+      })
+    } catch (error) {
+      res.status(400).json({
+        message: error.message,
+        success: false
+      })
+    }
+  },
+
   addComment: async (req, res) => {
     const userId = req.user && req.user.id
     const { eventId, comment } = req.body
