@@ -4,21 +4,12 @@ const validator = require('./placeValidator')
 
 const placeController = {
   createPlace: async (req, res) => {
-    //destructuring the body of the request for handling properties separately
-    let {
-      name,
-      address,
-      photo,
-      date,
-      occupancy,
-    } = req.body
-
     try {
       const userId = req.user && req.user.id // Assuming req.user is populated by verifyToken middleware
 
       //checking if user id is provided:
       if (!userId) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
           message: "User ID is not provided."
         })
@@ -43,10 +34,10 @@ const placeController = {
         })
       }
 
-      const result = await validator.validateAsync(req.body)
+      const validatedPlace = await validator.validateAsync(req.body)
 
       //check if the place already exists
-      const existingPlace = await Place.findOne({ name: result.name })
+      const existingPlace = await Place.findOne({ name: validatedPlace.name })
       if (existingPlace) {
         return res.status(409).json({
           success: false,
@@ -55,7 +46,7 @@ const placeController = {
       }
 
       //finally, creating a new place
-      const newPlace = await new Place(result).save()
+      const newPlace = await new Place(validatedPlace).save()
       res.status(201).json({
         success: true,
         message: 'New place added to the database!',
@@ -72,7 +63,7 @@ const placeController = {
     try {
       const places = await Place.find()
         //replacing certain Event fields with specified properties of the referenced object of each referenced collection
-        .populate('date', 'name date attendees')
+        .populate('events', 'name date attendees')
       res.status(200).json({
         success: true,
         data: places
@@ -95,7 +86,7 @@ const placeController = {
     }
 
     try {
-      const place = await Place.findById(id).populate('date', 'name date attendees')
+      const place = await Place.findById(id).populate('events', 'name date attendees')
 
       if (!place) {
         return res.status(404).json({

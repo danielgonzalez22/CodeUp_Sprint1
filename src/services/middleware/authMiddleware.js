@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken')
 
-const authMiddleware = (roles = []) => {
+const authMiddleware = (role) => {
     return (req, res, next) => {
         const token = req.header('Authorization')
         if (!token) {
@@ -10,7 +10,7 @@ const authMiddleware = (roles = []) => {
             const decoded = jwt.verify(token, process.env.JWT_SECRET)
             req.user = decoded
 
-            if (roles.length && !roles.includes(req.user.role)) {
+            if (role && role !== req.user.role) {
                 return res.status(403).json({ success: false, message: 'Forbidden: Access is denied.' })
             }
 

@@ -9,7 +9,6 @@ const eventController = {
     const userId = req.user && req.user.id // Assuming req.user is populated by verifyToken middleware
 
     try {
-
       //checking if user id is provided:
       if (!userId) {
         return res.status(401).json({
@@ -36,7 +35,7 @@ const eventController = {
           message: 'Only users with organizer role can create events.',
         })
       }
-
+      req.body = { ...req.body, organizer: userId }
       const result = await eventValidator.validateAsync(req.body)
 
       //check if the place exists
@@ -130,6 +129,28 @@ const eventController = {
     }
   },
 
+  getEventsByUser: async (req, res) => {
+    const userId = req.user && req.user.id
+    try {
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "User ID is not provided."
+        })
+      }
+
+      const user = await User.findById(userId)
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "No user with the provided ID was found."
+        })
+      }
+    } catch (error) {
+      
+    }
+
+  },
   enrollEvent: async (req, res) => {
     const userId = req.user && req.user.id
     const { eventId } = req.body
@@ -345,7 +366,7 @@ const eventController = {
         })
       }
 
-      //checking if the user has the necessary role for creating events
+      //checking if the user has the necessary role for deleting events
       if (user.role !== 'organizer') {
         return res.status(403).json({
           success: false,
@@ -374,8 +395,9 @@ const eventController = {
           message: "Only the organizer of the event can delete it."
         })
       }
-      
-      const deletedEvent = await Event.deleteOne()
+
+      const deletedEvent = await event.deleteOne()
+      //when calling the deleteOne method, a pre-delete middleware (defined in event model) will trigger. It will handle the deletion of all references to the event in other collections.
       res.status(200).json({
         success: true,
         message: 'Event deleted successfully.',
